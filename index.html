@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>رولت اروپایی</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --btn: #25272b;
+    --btn-gray: #3d3d3d;
+    --lime: #c4f24b;
+    --red: #e53935;
+    --green-btn: #8fc41e;
+    --muted: #8a8f98;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: #fff;
+    font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; color: #fff; }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px 4px;
+    flex-shrink: 0;
+  }
+  .pill {
+    background: #1e1e1e;
+    border-radius: 20px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .back-btn { padding: 0 14px; }
+  .menu-btn { width: 70px; }
+  .menu-btn .dot { width: 4px; height: 4px; background: #fff; border-radius: 50%; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 16px 8px;
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+  .user-box { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .username { font-size: 12px; color: #d0d0d0; }
+  .balance {
+    background: #1d2312;
+    border-radius: 14px;
+    height: 32px;
+    min-width: 72px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 13px;
+  }
+  .title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+
+  /* Wheel */
+  .wheel-area {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 0;
+  }
+  .wheel-wrap {
+    position: relative;
+    width: min(60vw, 34vh, 280px);
+    aspect-ratio: 1;
+  }
+  .pointer {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 13px solid var(--lime);
+    z-index: 3;
+  }
+  .wheel-ring {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 3px solid var(--lime);
+    box-shadow: 0 0 10px rgba(196, 242, 75, 0.6);
+    overflow: hidden;
+  }
+  #wheel {
+    width: 100%; height: 100%;
+    display: block;
+    shape-rendering: geometricPrecision;
+    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 1);
+  }
+  .hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 22%; height: 22%;
+    border-radius: 50%;
+    background: #111;
+    border: 2px solid var(--lime);
+    color: var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700;
+    z-index: 2;
+  }
+
+  .result {
+    min-height: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .result.win { color: var(--lime); }
+  .result.lose { color: #ff6b6b; }
+
+  /* Bets */
+  .bet-section { padding: 0 12px; flex-shrink: 0; }
+  .bet-label {
+    text-align: right;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 6px;
+    padding-right: 4px;
+  }
+  .bet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .bet-btn {
+    height: 36px;
+    border-radius: 8px;
+    background: var(--btn);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    border: 2px solid transparent;
+  }
+  .bet-btn.zero { background: var(--green-btn); }
+  .bet-btn.black { background: var(--btn-gray); }
+  .bet-btn.red { background: var(--red); }
+  .bet-btn.selected { border-color: var(--lime); }
+
+  /* Controls */
+  .controls {
+    background: #151515;
+    border-radius: 18px 18px 0 0;
+    padding: 10px 12px 10px;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .chips {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+  .chip {
+    height: 28px;
+    border-radius: 8px;
+    background: #22242a;
+    color: #9aa0a8;
+    font-size: 11px;
+  }
+  .amount-input {
+    width: 100%;
+    height: 36px;
+    border-radius: 10px;
+    background: #22242a;
+    border: none;
+    color: #fff;
+    text-align: center;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 6px;
+    outline: none;
+  }
+  .spin-btn {
+    width: 100%;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--lime);
+    color: #000;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .spin-btn:disabled { opacity: 0.6; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <button class="pill back-btn" type="button">
+      <span>Back</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
+    </button>
+    <button class="pill menu-btn" type="button">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </button>
+  </div>
+
+  <div class="header">
+    <div class="title">رولت اروپایی <span>🎰</span></div>
+    <div class="user-box">
+      <div class="username">👤 zedxer</div>
+      <div class="balance">💎 <span id="balanceText">۰</span></div>
+    </div>
+  </div>
+
+  <div class="wheel-area">
+    <div class="wheel-wrap">
+      <div class="pointer"></div>
+      <div class="wheel-ring">
+        <svg id="wheel" viewBox="0 0 300 300"></svg>
+      </div>
+      <div class="hub">?</div>
+    </div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <div class="bet-section">
+    <div class="bet-label">نوع شرط را انتخاب کنید:</div>
+    <div class="bet-grid">
+      <button class="bet-btn zero" data-bet="zero">🟢 صفر ×۱۴</button>
+      <button class="bet-btn black" data-bet="black">⚫ مشکی ×۲</button>
+      <button class="bet-btn red selected" data-bet="red">🔴 قرمز ×۲</button>
+      <button class="bet-btn" data-bet="number">عدد ×۳۶</button>
+      <button class="bet-btn" data-bet="odd">فرد ×۲</button>
+      <button class="bet-btn" data-bet="even">زوج ×۲</button>
+      <button class="bet-btn" data-bet="dozen1">دوجین ۱ ×۳</button>
+      <button class="bet-btn" data-bet="19-36">۱۹-۳۶ ×۲</button>
+      <button class="bet-btn" data-bet="1-18">۱-۱۸ ×۲</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="chips">
+      <button class="chip" data-amount="100">۱۰۰</button>
+      <button class="chip" data-amount="500">۵۰۰</button>
+      <button class="chip" data-amount="1000">۱ک</button>
+      <button class="chip" data-amount="5000">۵ک</button>
+      <button class="chip" data-amount="10000">۱۰ک</button>
+    </div>
+    <input class="amount-input" id="amount" type="text" inputmode="numeric" value="10">
+    <button class="spin-btn" id="spinBtn">🎰 چرخش</button>
+  </div>
+
+<script>
+  const NUMBERS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+  const SEG = 360 / NUMBERS.length;
+  const CX = 150, CY = 150, R = 150, RT = 118;
+  const START_BALANCE = 1000;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const wheel = document.getElementById("wheel");
+  const resultEl = document.getElementById("result");
+  const amountInput = document.getElementById("amount");
+  const balanceText = document.getElementById("balanceText");
+  const spinBtn = document.getElementById("spinBtn");
+
+  let balance = START_BALANCE;
+  let selectedBet = "red";
+  let chosenNumber = null;
+  let currentRotation = 0;
+  let spinning = false;
+
+  const fmt = (n) => Number(n).toLocaleString("fa-IR");
+  const mod = (x) => ((x % 360) + 360) % 360;
+
+  function updateBalance() {
+    balanceText.textContent = fmt(balance);
+  }
+
+  function pt(r, deg) {
+    const rad = (deg - 90) * Math.PI / 180;
+    return [CX + r * Math.cos(rad), CY + r * Math.sin(rad)];
+  }
+
+  // Build wheel
+  NUMBERS.forEach((n, i) => {
+    const [x1, y1] = pt(R, i * SEG - SEG / 2);
+    const [x2, y2] = pt(R, i * SEG + SEG / 2);
+    const path = document.createElementNS(svgNS, "path");
+    const fill = n === 0 ? "#8fc41e" : (RED.has(n) ? "#e53935" : "#111111");
+    path.setAttribute("d", `M${CX},${CY} L${x1},${y1} A${R},${R} 0 0,1 ${x2},${y2} Z`);
+    path.setAttribute("fill", fill);
+    path.setAttribute("stroke", "#222");
+    path.setAttribute("stroke-width", "0.5");
+    wheel.appendChild(path);
+
+    const text = document.createElementNS(svgNS, "text");
+    text.setAttribute("x", CX);
+    text.setAttribute("y", CY - RT);
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "middle");
+    text.setAttribute("fill", "#ffffff");
+    text.setAttribute("font-size", "13");
+    text.setAttribute("font-weight", "700");
+    text.setAttribute("font-family", "Arial, sans-serif");
+    text.setAttribute("transform", `rotate(${i * SEG} ${CX} ${CY})`);
+    text.textContent = n;
+    wheel.appendChild(text);
+  });
+
+  // Bet selection
+  document.querySelectorAll(".bet-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.bet === "number") {
+        const v = prompt("عدد مورد نظر را بین ۰ تا ۳۶ وارد کنید:");
+        const num = parseInt(v, 10);
+        if (isNaN(num) || num < 0 || num > 36) return;
+        chosenNumber = num;
+      }
+      document.querySelectorAll(".bet-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedBet = btn.dataset.bet;
+    });
+  });
+
+  // Chips set amount
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      amountInput.value = chip.dataset.amount;
+    });
+  });
+
+  function isWin(bet, n) {
+    switch (bet) {
+      case "zero": return n === 0;
+      case "red": return RED.has(n);
+      case "black": return n !== 0 && !RED.has(n);
+      case "number": return n === chosenNumber;
+      case "odd": return n !== 0 && n % 2 === 1;
+      case "even": return n !== 0 && n % 2 === 0;
+      case "dozen1": return n >= 1 && n <= 12;
+      case "19-36": return n >= 19 && n <= 36;
+      case "1-18": return n >= 1 && n <= 18;
+      default: return false;
+    }
+  }
+
+  function multiplier(bet) {
+    return { zero: 14, number: 36, dozen1: 3 }[bet] || 2;
+  }
+
+  const BET_NAMES = {
+    zero: "صفر", black: "مشکی", red: "قرمز", number: "عدد", odd: "فرد", even: "زوج",
+    dozen1: "دوجین ۱", "19-36": "۱۹-۳۶", "1-18": "۱-۱۸"
+  };
+
+  function showResult(text, cls) {
+    resultEl.textContent = text;
+    resultEl.className = "result " + (cls || "");
+  }
+
+  // Spin
+  spinBtn.addEventListener("click", () => {
+    if (spinning) return;
+
+    if (selectedBet === "number" && chosenNumber === null) {
+      showResult("ابتدا یک عدد انتخاب کنید", "lose");
+      return;
+    }
+
+    const amount = parseInt(amountInput.value.replace(/[^\d]/g, ""), 10) || 0;
+    if (amount <= 0) {
+      showResult("مبلغ شرط معتبر نیست", "lose");
+      return;
+    }
+    if (amount > balance) {
+      showResult("موجودی کافی نیست", "lose");
+      return;
+    }
+
+    balance -= amount;
+    updateBalance();
+
+    spinning = true;
+    spinBtn.disabled = true;
+    showResult("در حال چرخش...");
+
+    const winIndex = Math.floor(Math.random() * NUMBERS.length);
+    const winNumber = NUMBERS[winIndex];
+    const extra = 360 * (5 + Math.floor(Math.random() * 3));
+    const target = -(winIndex * SEG);
+    const delta = mod(target - mod(currentRotation));
+    currentRotation += extra + delta;
+    wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+    setTimeout(() => {
+      const label = BET_NAMES[selectedBet];
+      if (isWin(selectedBet, winNumber)) {
+        const payout = amount * multiplier(selectedBet);
+        balance += payout;
+        updateBalance();
+        showResult(`عدد ${fmt(winNumber)} — بردید! (${label}) مبلغ برد: ${fmt(payout)}`, "win");
+      } else {
+        showResult(`عدد ${fmt(winNumber)} — باختید (${label}) مبلغ باخت: ${fmt(amount)}`, "lose");
+      }
+      spinning = false;
+      spinBtn.disabled = false;
+    }, 4100);
+  });
+
+  updateBalance();
+</script>
+</body>
+</html>
