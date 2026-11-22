@@ -1,292 +1,567 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Roulette Game</title>
-<style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #0f1015; color: #fff; display: flex; justify-content: center; min-height: 100vh; }
-    
-    .app { width: 100%; max-width: 500px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رولت اروپایی</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap');
 
-    /* =========================================
-       نوار بالایی (تاریخچه - دقیقا مثل عکس)
-       ========================================= */
-    .top-bar { background: #1a1b23; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; direction: ltr; overflow: hidden; }
-    .classic-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: #fff; padding: 0 8px; white-space: nowrap; border-right: 1px solid #333; padding-right: 12px; }
-    .history-container { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; align-items: center; }
-    .history-container::-webkit-scrollbar { display: none; }
-    
-    /* باکس‌های اعداد تاریخچه */
-    .hist-box { min-width: 40px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; color: #fff; position: relative; }
-    .hist-box.red { background: #d32f2f; }
-    .hist-box.black { background: #2a2b33; }
-    .hist-box.green { background: #388e3c; }
-    
-    /* خط زرد وسط عدد صفر */
-    .hist-box.green::after { content: ''; position: absolute; width: 2px; height: 100%; background: #fbc02d; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    /* =========================================
-       چرخ رولت (کوچک شده که صفحه رو به هم نزنه)
-       ========================================= */
-    .wheel-container { display: flex; justify-content: center; align-items: center; height: 140px; margin: 5px 0; }
-    canvas { width: 130px; height: 130px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6)); }
+        body {
+            background-color: #0d0f12;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    /* =========================================
-       میز شرط بندی
-       ========================================= */
-    .table-wrapper { background: #1a1b23; padding: 8px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; direction: ltr; }
-    .main-grid { display: grid; grid-template-columns: 38px 1fr 38px; gap: 4px; }
-    
-    .zero-box { background: #388e3c; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; cursor: pointer; user-select: none; }
-    
-    .numbers-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
-    .num-cell { height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; cursor: pointer; user-select: none; transition: transform 0.1s; }
-    .num-cell:active { transform: scale(0.9); }
-    .num-cell.red { background: #d32f2f; color: #fff; }
-    .num-cell.black { background: #2a2b33; color: #fff; }
-    
-    .twotoone-col { display: flex; flex-direction: column; gap: 4px; }
-    .twotoone-box { background: #2a2b33; color: #888; flex: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer; }
+        /* هدر */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #0d0f12;
+            border-bottom: 1px solid #1f2229;
+        }
 
-    .bottom-grid { display: grid; gap: 4px; margin-top: 2px; }
-    .row-3-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-left: 42px; margin-right: 42px; }
-    .row-6-col { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-left: 42px; margin-right: 42px; }
-    
-    .bot-cell { height: 32px; border-radius: 6px; background: #2a2b33; color: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; cursor: pointer; }
-    .bot-cell.red { background: #d32f2f; color: #fff; }
-    .bot-cell.black { background: #1a1b23; border: 1px solid #333; color: #fff; }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    /* =========================================
-       بخش کنترل‌ها
-       ========================================= */
-    .controls-wrapper { background: #1a1b23; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; direction: ltr; }
-    .tabs { display: flex; border-bottom: 1px solid #333; margin-bottom: 4px; }
-    .tab { flex: 1; text-align: center; padding: 8px 0; color: #888; font-size: 13px; font-weight: bold; cursor: pointer; }
-    .tab.active { color: #fff; border-bottom: 2px solid #4caf50; }
+        .avatar {
+            width: 35px;
+            height: 35px;
+            background-color: #2e3138;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #a0a5b1;
+        }
 
-    .spin-btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #388e3c; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .spin-btn:active { background: #2e7d32; }
-    .spin-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .user-name {
+            font-size: 14px;
+            color: #a0a5b1;
+        }
 
-    .info-box { background: #0f1015; padding: 10px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
-    .info-label { color: #888; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-content { display: flex; justify-content: space-between; align-items: center; }
-    .info-value { font-size: 16px; font-weight: bold; color: #fff; }
-    
-    .crypto-select { display: flex; align-items: center; gap: 6px; background: #2a2b33; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }
-    
-    .chip-box { background: #0f1015; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-end; }
-    .chip-left { display: flex; flex-direction: column; gap: 4px; }
-    .chip-actions { display: flex; gap: 4px; }
-    .chip-btn { background: #2a2b33; border: none; color: #aaa; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
-    .arrow-actions { display: flex; flex-direction: column; gap: 2px; }
-    .arrow-btn { background: #2a2b33; border: none; color: #aaa; width: 30px; height: 15px; border-radius: 4px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .balance {
+            background-color: #1f2229;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid #2e3138;
+        }
 
-    .win-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #4caf50; color: white; padding: 12px 24px; border-radius: 20px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-    .win-alert.show { opacity: 1; transform: translate(-50%, 0); }
-</style>
+        .balance span { color: #00d2ff; }
+
+        .game-title {
+            font-size: 18px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* بخش چرخ */
+        .wheel-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(159, 255, 25, 0.2);
+        }
+
+        /* نشانگر بالای چرخ */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 20px solid #9fff19;
+            z-index: 10;
+            filter: drop-shadow(0 0 5px #9fff19);
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transition: transform 5s cubic-bezier(0.1, 0.7, 0.1, 1);
+            border: 4px solid #2e3138;
+        }
+
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background-color: #0d0f12;
+            border: 3px solid #9fff19;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #9fff19;
+            z-index: 5;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        /* کنترل‌ها */
+        .controls {
+            background-color: #0d0f12;
+            padding: 15px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            border-top: 1px solid #1f2229;
+        }
+
+        .bet-label {
+            font-size: 12px;
+            color: #a0a5b1;
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        .bet-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .bet-btn {
+            background-color: #1f2229;
+            border: 1px solid #2e3138;
+            color: #fff;
+            padding: 12px 5px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .bet-btn.active {
+            border: 2px solid #9fff19;
+        }
+
+        .bet-btn.red { background-color: #e74c3c; border-color: #c0392b; }
+        .bet-btn.green { background-color: #9fff19; color: #000; border-color: #8adc15; }
+        
+        .bet-btn .multiplier {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .amount-grid {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .amount-btn {
+            background-color: #1f2229;
+            border: 1px solid #2e3138;
+            color: #a0a5b1;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+
+        .amount-input-container {
+            background-color: #15181e;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border: 1px solid #2e3138;
+        }
+
+        .spin-btn {
+            background-color: #9fff19;
+            color: #000;
+            width: 100%;
+            padding: 15px;
+            border-radius: 15px;
+            border: none;
+            font-size: 18px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(159, 255, 25, 0.3);
+        }
+
+        .spin-btn:active {
+            transform: scale(0.98);
+        }
+
+        .spin-btn:disabled {
+            background-color: #555;
+            color: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* مودال نتیجه */
+        .result-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        .result-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .result-box {
+            background: #1f2229;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #9fff19;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .result-modal.show .result-box {
+            transform: translateY(0);
+        }
+
+        .result-box h2 { margin-bottom: 15px; }
+        .result-box p { margin-bottom: 20px; color: #a0a5b1; }
+        
+        .close-modal {
+            background: #9fff19;
+            color: #000;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-<div class="win-alert" id="winAlert">شما برنده شدید!</div>
-
-<div class="app">
-    
-    <!-- ۱. نوار بالایی (تاریخچه) -->
-    <div class="top-bar">
-        <div class="classic-btn">✨ Classic ▼</div>
-        <div class="history-container" id="historyBar">
-            <!-- اعداد اولیه دقیقا مثل عکس -->
-            <div class="hist-box red">19</div>
-            <div class="hist-box black">15</div>
-            <div class="hist-box red">32</div>
-            <div class="hist-box green">0</div>
-            <div class="hist-box black">26</div>
-            <div class="hist-box red">3</div>
-            <div class="hist-box black">35</div>
+    <!-- هدر -->
+    <div class="header">
+        <div class="user-info">
+            <div class="avatar">👤</div>
+            <div class="user-name">zedxer</div>
         </div>
+        <div class="game-title">🎰 رولت اروپایی</div>
+        <div class="balance">💎 <span id="balanceDisplay">1000</span></div>
     </div>
 
-    <!-- ۲. چرخ بازی -->
+    <!-- چرخ -->
     <div class="wheel-container">
-        <canvas id="wheelCanvas" width="130" height="130"></canvas>
-    </div>
-
-    <!-- ۳. میز شرط بندی -->
-    <div class="table-wrapper">
-        <div class="main-grid">
-            <div class="zero-box" onclick="alert('شرط روی صفر')">0</div>
-            <div class="numbers-grid" id="numbersGrid"></div>
-            <div class="twotoone-col">
-                <div class="twotoone-box" onclick="alert('شرط روی ستون ۱')">2:1</div>
-                <div class="twotoone-box" onclick="alert('شرط روی ستون ۲')">2:1</div>
-                <div class="twotoone-box" onclick="alert('شرط روی ستون ۳')">2:1</div>
-            </div>
-        </div>
-
-        <div class="row-3-col" style="margin-top: 4px;">
-            <div class="bot-cell" onclick="alert('شرط 1ST 12')">1ST 12</div>
-            <div class="bot-cell" onclick="alert('شرط 2ND 12')">2ND 12</div>
-            <div class="bot-cell" onclick="alert('شرط 3RD 12')">3RD 12</div>
-        </div>
-        <div class="row-6-col">
-            <div class="bot-cell" onclick="alert('شرط 1-18')">1-18</div>
-            <div class="bot-cell" onclick="alert('شرط EVEN')">EVEN</div>
-            <div class="bot-cell red" onclick="alert('شرط RED')">RED</div>
-            <div class="bot-cell black" onclick="alert('شرط BLACK')">BLACK</div>
-            <div class="bot-cell" onclick="alert('شرط ODD')">ODD</div>
-            <div class="bot-cell" onclick="alert('شرط 19-36')">19-36</div>
+        <div class="wheel-wrapper">
+            <div class="pointer"></div>
+            <canvas id="wheelCanvas" width="320" height="320"></canvas>
+            <div class="center-dot">?</div>
         </div>
     </div>
 
-    <!-- ۴. کنترل‌ها -->
-    <div class="controls-wrapper">
-        <div class="tabs">
-            <div class="tab active">Manual</div>
-            <div class="tab">Auto</div>
-            <div class="tab">Advanced</div>
-        </div>
-        
-        <button class="spin-btn" id="spinBtn">Spin</button>
-        
-        <div class="info-box">
-            <div class="info-label">Balance</div>
-            <div class="info-content">
-                <div class="info-value" id="balanceDisplay">1000</div>
-                <div class="crypto-select">₿ BTC ▼</div>
+    <!-- کنترل‌ها -->
+    <div class="controls">
+        <div class="bet-label">نوع شرط را انتخاب کنید:</div>
+        <div class="bet-grid">
+            <div class="bet-btn red active" data-type="red">
+                <span>قرمز</span> <span class="multiplier">2x</span>
+            </div>
+            <div class="bet-btn" data-type="black">
+                <span>مشکی</span> <span class="multiplier">2x</span>
+            </div>
+            <div class="bet-btn green" data-type="zero">
+                <span>صفر</span> <span class="multiplier">14x</span>
+            </div>
+            <div class="bet-btn" data-type="even">
+                <span>زوج</span> <span class="multiplier">2x</span>
+            </div>
+            <div class="bet-btn" data-type="odd">
+                <span>فرد</span> <span class="multiplier">2x</span>
+            </div>
+            <div class="bet-btn" data-type="number">
+                <span>عدد</span> <span class="multiplier">36x</span>
+            </div>
+            <div class="bet-btn" data-type="1-18">
+                <span>1-18</span> <span class="multiplier">2x</span>
+            </div>
+            <div class="bet-btn" data-type="19-36">
+                <span>19-36</span> <span class="multiplier">2x</span>
+            </div>
+            <div class="bet-btn" data-type="dozen1">
+                <span>دو جین 1</span> <span class="multiplier">3x</span>
             </div>
         </div>
-        
-        <div class="chip-box">
-            <div class="chip-left">
-                <div class="info-label">Chip Size</div>
-                <div class="info-value">₿ 0.00000001</div>
-            </div>
-            <div class="chip-actions">
-                <button class="chip-btn">½</button>
-                <button class="chip-btn">2x</button>
-                <div class="arrow-actions">
-                    <button class="arrow-btn">▲</button>
-                    <button class="arrow-btn">▼</button>
-                </div>
-            </div>
+
+        <div class="amount-grid">
+            <div class="amount-btn" data-amount="100">100</div>
+            <div class="amount-btn" data-amount="500">500</div>
+            <div class="amount-btn" data-amount="1000">1K</div>
+            <div class="amount-btn" data-amount="5000">5K</div>
+            <div class="amount-btn" data-amount="max">ماکس</div>
+        </div>
+
+        <div class="amount-input-container" id="betAmountDisplay">10</div>
+
+        <button class="spin-btn" id="spinBtn">چرخش 🎰</button>
+    </div>
+
+    <!-- مودال نتیجه -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-box">
+            <h2 id="resultTitle">بردید!</h2>
+            <p id="resultText">عدد خروجی: 14</p>
+            <button class="close-modal" onclick="closeModal()">تایید</button>
         </div>
     </div>
 
-</div>
-
-<script>
-const NUMBERS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-let balance = 1000;
-
-// ساخت جدول اعداد
-const numbersGrid = document.getElementById('numbersGrid');
-numbersGrid.innerHTML = '';
-for (let i = 1; i <= 12; i++) { let n = i * 3; numbersGrid.innerHTML += `<div class="num-cell ${RED.has(n) ? 'red' : 'black'}">${n}</div>`; }
-for (let i = 1; i <= 12; i++) { let n = i * 3 - 1; numbersGrid.innerHTML += `<div class="num-cell ${RED.has(n) ? 'red' : 'black'}">${n}</div>`; }
-for (let i = 1; i <= 12; i++) { let n = i * 3 - 2; numbersGrid.innerHTML += `<div class="num-cell ${RED.has(n) ? 'red' : 'black'}">${n}</div>`; }
-
-// انیمیشن چرخ
-const canvas = document.getElementById('wheelCanvas');
-const ctx = canvas.getContext('2d');
-const CX = 65, CY = 65, R = 55;
-const POCKETS = 37;
-const STEP = (Math.PI * 2) / POCKETS;
-
-function drawWheel(angle) {
-    ctx.clearRect(0, 0, 130, 130);
-    for (let i = 0; i < POCKETS; i++) {
-        const start = i * STEP + angle;
-        const end = (i + 1) * STEP + angle;
-        ctx.beginPath(); ctx.moveTo(CX, CY); ctx.arc(CX, CY, R, start, end); ctx.closePath();
-        const num = NUMBERS[i];
-        ctx.fillStyle = num === 0 ? '#388e3c' : (RED.has(num) ? '#d32f2f' : '#2a2b33');
-        ctx.fill();
-        ctx.strokeStyle = '#0f1015'; ctx.lineWidth = 1; ctx.stroke();
+    <script>
+        // ترتیب استاندارد اعداد رولت اروپایی روی چرخ
+        const wheelOrder = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
         
-        ctx.save(); ctx.translate(CX, CY); ctx.rotate(start + STEP / 2); ctx.translate(R - 8, 0); ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 7px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(num, 0, 0); ctx.restore();
-    }
-    ctx.beginPath(); ctx.arc(CX, CY, 15, 0, Math.PI * 2); ctx.fillStyle = '#1a1b23'; ctx.fill(); ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(CX, CY - R - 1); ctx.lineTo(CX - 4, CY - R - 8); ctx.lineTo(CX + 4, CY - R - 8); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill();
-}
+        // اعداد قرمز (بقیه به جز صفر مشکی هستند)
+        const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 
-let currentAngle = 0;
-drawWheel(currentAngle);
+        let currentBalance = 1000;
+        let currentBetAmount = 10;
+        let currentBetType = 'red';
+        let isSpinning = false;
+        let currentRotation = 0;
 
-const spinBtn = document.getElementById('spinBtn');
-const historyBar = document.getElementById('historyBar');
-const balanceDisplay = document.getElementById('balanceDisplay');
-const winAlert = document.getElementById('winAlert');
-let isSpinning = false;
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const balanceDisplay = document.getElementById('balanceDisplay');
+        const betAmountDisplay = document.getElementById('betAmountDisplay');
 
-spinBtn.addEventListener('click', () => {
-    if (isSpinning) return;
-    if (balance < 10) { alert('موجودی کافی نیست!'); return; }
-    
-    isSpinning = true;
-    spinBtn.disabled = true;
-    balance -= 10; 
-    balanceDisplay.textContent = balance;
-    
-    const targetIndex = Math.floor(Math.random() * POCKETS);
-    const targetNum = NUMBERS[targetIndex];
-    
-    const targetSliceCenter = targetIndex * STEP + (STEP / 2);
-    let exactTargetAngle = -Math.PI / 2 - targetSliceCenter;
-    exactTargetAngle = (exactTargetAngle % (Math.PI * 2) + (Math.PI * 2)) % (Math.PI * 2);
-    let targetAngle = exactTargetAngle + (Math.PI * 2 * 10);
-    
-    while (targetAngle <= currentAngle) { targetAngle += Math.PI * 2; }
+        // رسم چرخ رولت
+        function drawWheel() {
+            const numSlices = wheelOrder.length;
+            const anglePerSlice = (2 * Math.PI) / numSlices;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2;
 
-    const duration = 4000; 
-    const startTime = performance.now();
-    const startAngle = currentAngle;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function animate(time) {
-        const progress = Math.min((time - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        currentAngle = startAngle + (targetAngle - startAngle) * easeOut;
-        drawWheel(currentAngle);
-        
-        if (progress < 1) { requestAnimationFrame(animate); } else { finishGame(targetNum); }
-    }
-    requestAnimationFrame(animate);
-});
+            for (let i = 0; i < numSlices; i++) {
+                const startAngle = i * anglePerSlice;
+                const endAngle = (i + 1) * anglePerSlice;
+                const num = wheelOrder[i];
 
-function finishGame(num) {
-    isSpinning = false;
-    spinBtn.disabled = false;
-    
-    // اضافه کردن به تاریخچه با انیمیشن
-    const type = num === 0 ? 'green' : (RED.has(num) ? 'red' : 'black');
-    const histBox = document.createElement('div');
-    histBox.className = `hist-box ${type}`;
-    histBox.textContent = num;
-    
-    // درج در ابتدای لیست (سمت چپ در حالت LTR)
-    historyBar.prepend(histBox);
-    if (historyBar.children.length > 7) historyBar.lastChild.remove();
-    
-    if (num !== 0 && Math.random() > 0.5) {
-        balance += 20;
-        balanceDisplay.textContent = balance;
-        showWin(`برنده شدی! +20$`);
-    } else if (num === 0) {
-        balance += 50;
-        balanceDisplay.textContent = balance;
-        showWin(`صفر سبز! +50$`);
-    }
-}
+                // رنگ بخش
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
 
-function showWin(text) {
-    winAlert.textContent = text;
-    winAlert.classList.add('show');
-    setTimeout(() => winAlert.classList.remove('show'), 2500);
-}
-</script>
+                if (num === 0) {
+                    ctx.fillStyle = '#9fff19'; // سبز
+                } else if (redNumbers.includes(num)) {
+                    ctx.fillStyle = '#e74c3c'; // قرمز
+                } else {
+                    ctx.fillStyle = '#1a1a1a'; // مشکی
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#0d0f12';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // نوشتن متن (عدد)
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + anglePerSlice / 2);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 12px Vazirmatn";
+                ctx.fillText(num, 0, -radius + 20);
+                ctx.restore();
+            }
+        }
+
+        // تعامل با دکمه‌های شرط
+        document.querySelectorAll('.bet-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isSpinning) return;
+                document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentBetType = btn.getAttribute('data-type');
+            });
+        });
+
+        // تعامل با دکمه‌های مبلغ
+        document.querySelectorAll('.amount-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isSpinning) return;
+                let amount = btn.getAttribute('data-amount');
+                if (amount === 'max') {
+                    currentBetAmount = currentBalance;
+                } else {
+                    currentBetAmount = parseInt(amount);
+                }
+                betAmountDisplay.innerText = currentBetAmount;
+            });
+        });
+
+        // منطق چرخش
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning) return;
+            if (currentBetAmount > currentBalance) {
+                alert("موجودی کافی نیست!");
+                return;
+            }
+            if (currentBetAmount <= 0) {
+                alert("مبلغ شرط باید بیشتر از صفر باشد!");
+                return;
+            }
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtn.innerText = "در حال چرخش...";
+
+            // کسر مبلغ شرط
+            currentBalance -= currentBetAmount;
+            balanceDisplay.innerText = currentBalance;
+
+            // انتخاب عدد برنده به صورت رندوم
+            const winningNumberIndex = Math.floor(Math.random() * wheelOrder.length);
+            const winningNumber = wheelOrder[winningNumberIndex];
+
+            // محاسبه درجه چرخش
+            // هر بخش (360 / 37) درجه است
+            const anglePerSlice = 360 / wheelOrder.length;
+            
+            // محاسبه زاویه هدف (چند دور کامل + زاویه عدد برنده)
+            const targetAngle = (360 * 5) + (360 - (winningNumberIndex * anglePerSlice));
+            
+            // برای اینکه همیشه به جلو بچرخد
+            currentRotation += targetAngle;
+
+            // اعمال انیمیشن CSS
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            // پس از پایان انیمیشن (5 ثانیه)
+            setTimeout(() => {
+                checkWin(winningNumber);
+                isSpinning = false;
+                spinBtn.disabled = false;
+                spinBtn.innerText = "چرخش 🎰";
+            }, 5100); // کمی بیشتر از زمان ترنزیشن
+        });
+
+        // بررسی برد و باخت
+        function checkWin(winningNumber) {
+            let isWin = false;
+            let multiplier = 0;
+
+            if (currentBetType === 'zero' && winningNumber === 0) {
+                isWin = true; multiplier = 14;
+            } else if (currentBetType === 'red' && redNumbers.includes(winningNumber)) {
+                isWin = true; multiplier = 2;
+            } else if (currentBetType === 'black' && winningNumber !== 0 && !redNumbers.includes(winningNumber)) {
+                isWin = true; multiplier = 2;
+            } else if (currentBetType === 'even' && winningNumber !== 0 && winningNumber % 2 === 0) {
+                isWin = true; multiplier = 2;
+            } else if (currentBetType === 'odd' && winningNumber % 2 !== 0) {
+                isWin = true; multiplier = 2;
+            } else if (currentBetType === '1-18' && winningNumber >= 1 && winningNumber <= 18) {
+                isWin = true; multiplier = 2;
+            } else if (currentBetType === '19-36' && winningNumber >= 19 && winningNumber <= 36) {
+                isWin = true; multiplier = 2;
+            } else if (currentBetType === 'dozen1' && winningNumber >= 1 && winningNumber <= 12) {
+                isWin = true; multiplier = 3;
+            } else if (currentBetType === 'number' && winningNumber === parseInt(prompt("عدد مورد نظر را وارد کنید (0-36):"))) {
+                isWin = true; multiplier = 36;
+            }
+
+            // نمایش نتیجه
+            const modal = document.getElementById('resultModal');
+            const title = document.getElementById('resultTitle');
+            const text = document.getElementById('resultText');
+
+            text.innerText = `عدد خروجی: ${winningNumber} (${winningNumber === 0 ? 'سبز' : redNumbers.includes(winningNumber) ? 'قرمز' : 'مشکی'})`;
+
+            if (isWin) {
+                const winAmount = currentBetAmount * multiplier;
+                currentBalance += winAmount;
+                title.innerText = "🎉 شما بردید!";
+                title.style.color = "#9fff19";
+                text.innerText += `\nجایزه: ${winAmount}`;
+            } else {
+                title.innerText = "😢 شما باختید!";
+                title.style.color = "#e74c3c";
+            }
+
+            balanceDisplay.innerText = currentBalance;
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('show');
+        }
+
+        // راه‌اندازی اولیه
+        drawWheel();
+
+    </script>
 </body>
 </html>
