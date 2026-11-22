@@ -6,46 +6,66 @@
 <title>Roulette Game</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #0f1015; color: #fff; display: flex; justify-content: center; min-height: 100vh; padding: 10px; }
-    .app { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; }
+    body { background-color: #14151a; color: #fff; display: flex; justify-content: center; min-height: 100vh; }
+    .app { width: 100%; max-width: 500px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
     
-    /* Top Bar (FaucetPay Style) */
-    .top-bar { background: #1a1b23; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; overflow: hidden; }
-    .classic-dropdown { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: bold; color: #fff; white-space: nowrap; }
+    /* Top Bar (تاریخچه) */
+    .top-bar { background: #1e1f24; border-radius: 12px; padding: 8px; display: flex; align-items: center; gap: 10px; direction: ltr; }
+    .classic-dropdown { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: bold; color: #fff; white-space: nowrap; padding-right: 8px; border-right: 1px solid #333; }
     .history-container { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; align-items: center; }
     .history-container::-webkit-scrollbar { display: none; }
     .history-placeholder { color: #6b6c76; font-size: 12px; white-space: nowrap; }
-    .hist-item { min-width: 32px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; color: #fff; }
+    .hist-item { min-width: 32px; height: 38px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; color: #fff; }
     .hist-red { background: #d32f2f; }
     .hist-black { background: #2a2b33; }
     .hist-green { background: #388e3c; }
 
-    /* Canvas Wheel */
-    .wheel-wrapper { display: flex; justify-content: center; margin: 5px 0; position: relative; }
-    canvas { width: 240px; height: 240px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6)); }
+    /* چرخ */
+    .wheel-wrapper { display: flex; justify-content: center; margin: 0; position: relative; }
+    canvas { width: 180px; height: 180px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6)); }
 
-    /* Table (FaucetPay Style) */
-    .table-container { background: #1a1b23; padding: 8px; border-radius: 12px; }
-    .roulette-grid { display: grid; grid-template-columns: 2.2rem repeat(12, 1fr) 2.2rem; gap: 3px; direction: ltr; }
-    .cell { height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; user-select: none; transition: 0.1s; border: 1px solid transparent; }
-    .cell:active { transform: scale(0.95); border: 1px solid #fff; }
+    /* میز شرط بندی */
+    .table-container { background: #1e1f24; padding: 6px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; direction: ltr; }
+    
+    /* بخش اصلی اعداد */
+    .main-table { display: flex; gap: 3px; }
+    .zero-col { width: 36px; display: flex; }
+    .zero-cell { flex: 1; background: #388e3c; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; color: #fff; cursor: pointer; }
+    
+    .numbers-area { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .num-row { display: flex; gap: 3px; }
+    .cell { flex: 1; height: 38px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; cursor: pointer; user-select: none; transition: 0.1s; }
+    .cell:active { transform: scale(0.95); }
     .cell.red { background: #d32f2f; color: #fff; }
     .cell.black { background: #2a2b33; color: #fff; }
-    .cell.green { background: #388e3c; color: #fff; }
-    .cell.span-3 { grid-row: span 3; height: auto; background: #22232b; color: #888; font-size: 11px; }
     
-    .bottom-bets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-top: 3px; direction: ltr; }
-    .bottom-bets .cell { height: 35px; background: #22232b; color: #ccc; font-size: 11px; border-radius: 6px;}
-    .bottom-bets .cell.red-bet { background: #d32f2f; color: #fff; }
-    .bottom-bets .cell.black-bet { background: #2a2b33; color: #fff; }
+    .two-to-one { width: 36px; display: flex; flex-direction: column; gap: 3px; }
+    .two-to-one .cell { background: #22232b; color: #888; font-size: 12px; }
 
-    /* Controls */
-    .controls { background: #1a1b23; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; margin-top: 5px; }
-    .balance-box { display: flex; justify-content: space-between; background: #0f1015; padding: 15px; border-radius: 8px; align-items: center; border: 1px solid #2a2b33; }
-    .balance-text { color: #888; font-size: 14px; }
-    .balance-val { font-weight: bold; color: #fff; font-size: 18px; }
-    .spin-btn { width: 100%; padding: 16px; border-radius: 8px; border: none; background: #388e3c; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    /* ردیف پایین میز */
+    .bottom-table { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; margin-left: 39px; margin-right: 39px; }
+    .bottom-row { display: flex; gap: 3px; }
+    .bottom-cell { flex: 1; height: 34px; border-radius: 6px; background: #22232b; color: #ccc; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; cursor: pointer; }
+    .bottom-cell.red { background: #d32f2f; color: #fff; }
+    .bottom-cell.black { background: #2a2b33; color: #fff; }
+
+    /* کنترل ها */
+    .controls { background: #1e1f24; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; margin-top: 4px; direction: ltr; }
+    
+    .tabs { display: flex; justify-content: space-around; color: #888; font-size: 13px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 4px; }
+    .tab.active { color: #fff; border-bottom: 2px solid #fff; padding-bottom: 6px; }
+    
+    .spin-btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #388e3c; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; letter-spacing: 1px; }
     .spin-btn:disabled { background: #2a2b33; color: #666; cursor: not-allowed; }
+    
+    .info-box { background: #14151a; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .info-label { color: #888; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    .info-value { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: bold; }
+    
+    .chip-box { display: flex; align-items: center; justify-content: space-between; background: #14151a; padding: 10px; border-radius: 8px; }
+    .chip-text { color: #fff; font-size: 14px; }
+    .chip-buttons { display: flex; gap: 4px; }
+    .chip-btn { background: #22232b; border: none; color: #aaa; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
     
     .win-alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: #388e3c; color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
     .win-alert.show { opacity: 1; transform: translate(-50%, 0); }
@@ -56,7 +76,7 @@
 <div class="win-alert" id="winAlert">شما برنده شدید!</div>
 
 <div class="app">
-    <!-- نوار بالا (شبیه FaucetPay) -->
+    <!-- تاریخچه بالا -->
     <div class="top-bar">
         <div class="classic-dropdown">✨ Classic ▼</div>
         <div class="history-container" id="historyBar">
@@ -64,34 +84,77 @@
         </div>
     </div>
 
-    <!-- چرخ -->
+    <!-- چرخ انیمیشن (کوچک شده) -->
     <div class="wheel-wrapper">
-        <canvas id="wheelCanvas" width="240" height="240"></canvas>
+        <canvas id="wheelCanvas" width="180" height="180"></canvas>
     </div>
 
-    <!-- میز شرط بندی -->
+    <!-- میز شرط بندی دقیقا شبیه FaucetPay -->
     <div class="table-container">
-        <div class="roulette-grid" id="bettingGrid"></div>
-        <div class="bottom-bets">
-            <div class="cell">1ST 12</div>
-            <div class="cell">2ND 12</div>
-            <div class="cell">3RD 12</div>
-            <div class="cell">1-18</div>
-            <div class="cell">EVEN</div>
-            <div class="cell red-bet">RED</div>
-            <div class="cell black-bet">BLACK</div>
-            <div class="cell">ODD</div>
-            <div class="cell">19-36</div>
+        <div class="main-table">
+            <!-- عدد صفر -->
+            <div class="zero-col">
+                <div class="zero-cell" onclick="alert('شرط روی صفر')">0</div>
+            </div>
+            
+            <!-- اعداد (ساخته شده با جاوا اسکریپت) -->
+            <div class="numbers-area" id="numbersArea"></div>
+            
+            <!-- 2:1 ها -->
+            <div class="two-to-one">
+                <div class="cell" onclick="alert('شرط روی ستون ۱')">2:1</div>
+                <div class="cell" onclick="alert('شرط روی ستون ۲')">2:1</div>
+                <div class="cell" onclick="alert('شرط روی ستون ۳')">2:1</div>
+            </div>
+        </div>
+
+        <!-- ردیف پایین میز -->
+        <div class="bottom-table">
+            <div class="bottom-row">
+                <div class="bottom-cell" onclick="alert('شرط روی 1ST 12')">1ST 12</div>
+                <div class="bottom-cell" onclick="alert('شرط روی 2ND 12')">2ND 12</div>
+                <div class="bottom-cell" onclick="alert('شرط روی 3RD 12')">3RD 12</div>
+            </div>
+            <div class="bottom-row">
+                <div class="bottom-cell" onclick="alert('شرط روی 1-18')">1-18</div>
+                <div class="bottom-cell" onclick="alert('شرط روی EVEN')">EVEN</div>
+                <div class="bottom-cell red" onclick="alert('شرط روی قرمز')">RED</div>
+                <div class="bottom-cell black" onclick="alert('شرط روی مشکی')">BLACK</div>
+                <div class="bottom-cell" onclick="alert('شرط روی ODD')">ODD</div>
+                <div class="bottom-cell" onclick="alert('شرط روی 19-36')">19-36</div>
+            </div>
         </div>
     </div>
 
     <!-- کنترل ها -->
     <div class="controls">
-        <div class="balance-box">
-            <span class="balance-text">موجودی:</span>
-            <span class="balance-val" id="balanceDisplay">1000 $</span>
+        <div class="tabs">
+            <div class="tab active">Manual</div>
+            <div class="tab">Auto</div>
+            <div class="tab">Advanced</div>
         </div>
-        <button class="spin-btn" id="spinBtn">SPIN (چرخاندن)</button>
+        
+        <button class="spin-btn" id="spinBtn">Spin</button>
+        
+        <div class="info-box">
+            <div class="info-label">Balance</div>
+            <div class="info-value">
+                <span id="balanceDisplay">1000 $</span>
+                <span>₿ BTC</span>
+            </div>
+        </div>
+        
+        <div class="chip-box">
+            <div>
+                <div class="info-label">Chip Size</div>
+                <div class="chip-text">₿ 0.00000001</div>
+            </div>
+            <div class="chip-buttons">
+                <button class="chip-btn">½</button>
+                <button class="chip-buttons" style="background:transparent; border:none; color:#555;">▲<br>▼</button>
+                <button class="chip-btn">2x</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -100,48 +163,40 @@ const NUMBERS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,
 const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 let balance = 1000;
 
-// ساخت جدول (دقیقا شبیه عکس)
-const grid = document.getElementById('bettingGrid');
-grid.innerHTML = '';
+// ساخت جدول اعداد دقیقا مثل عکس
+const numbersArea = document.getElementById('numbersArea');
+numbersArea.innerHTML = '';
 
-// خانه صفر (سمت راست)
-const zero = document.createElement('div');
-zero.className = 'cell green span-3';
-zero.textContent = '0';
-grid.appendChild(zero);
+// ردیف اول: 3, 6, 9... 36
+let row1 = document.createElement('div'); row1.className = 'num-row';
+// ردیف دوم: 2, 5, 8... 35
+let row2 = document.createElement('div'); row2.className = 'num-row';
+// ردیف سوم: 1, 4, 7... 34
+let row3 = document.createElement('div'); row3.className = 'num-row';
 
-// اعداد (از راست به چپ به صورت ستونی)
 for (let col = 1; col <= 12; col++) {
-    // در LTR Grid، اولین ستون چپ است. پس برای چیدمان FaucetPay ستون 12 را اول میگذاریم
-    let c = 13 - col; 
-    let n1 = c * 3;     // ردیف اول
-    let n2 = c * 3 - 1; // ردیف دوم
-    let n3 = c * 3 - 2; // ردیف سوم
+    let n1 = col * 3;     // 3, 6, 9...
+    let n2 = col * 3 - 1; // 2, 5, 8...
+    let n3 = col * 3 - 2; // 1, 4, 7...
 
-    [n1, n2, n3].forEach(num => {
-        const cell = document.createElement('div');
-        cell.className = `cell ${RED.has(num) ? 'red' : 'black'}`;
-        cell.textContent = num;
-        grid.appendChild(cell);
-    });
+    row1.innerHTML += `<div class="cell ${RED.has(n1) ? 'red' : 'black'}">${n1}</div>`;
+    row2.innerHTML += `<div class="cell ${RED.has(n2) ? 'red' : 'black'}">${n2}</div>`;
+    row3.innerHTML += `<div class="cell ${RED.has(n3) ? 'red' : 'black'}">${n3}</div>`;
 }
-
-// دکمه 2:1 (سمت چپ)
-const twoToOne = document.createElement('div');
-twoToOne.className = 'cell span-3';
-twoToOne.textContent = '2:1';
-grid.appendChild(twoToOne);
+numbersArea.appendChild(row1);
+numbersArea.appendChild(row2);
+numbersArea.appendChild(row3);
 
 
-// --- انیمیشن چرخ و رفع باگ ---
+// --- انیمیشن چرخ و منطق ---
 const canvas = document.getElementById('wheelCanvas');
 const ctx = canvas.getContext('2d');
-const CX = 120, CY = 120, R = 110;
+const CX = 90, CY = 90, R = 80;
 const POCKETS = 37;
 const STEP = (Math.PI * 2) / POCKETS;
 
 function drawWheel(angle) {
-    ctx.clearRect(0, 0, 240, 240);
+    ctx.clearRect(0, 0, 180, 180);
     
     for (let i = 0; i < POCKETS; i++) {
         const start = i * STEP + angle;
@@ -155,7 +210,7 @@ function drawWheel(angle) {
         const num = NUMBERS[i];
         ctx.fillStyle = num === 0 ? '#388e3c' : (RED.has(num) ? '#d32f2f' : '#2a2b33');
         ctx.fill();
-        ctx.strokeStyle = '#0f1015';
+        ctx.strokeStyle = '#14151a';
         ctx.lineWidth = 1;
         ctx.stroke();
         
@@ -163,10 +218,10 @@ function drawWheel(angle) {
         ctx.save();
         ctx.translate(CX, CY);
         ctx.rotate(start + STEP / 2);
-        ctx.translate(R - 15, 0);
+        ctx.translate(R - 10, 0);
         ctx.rotate(Math.PI / 2);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px Arial';
+        ctx.font = 'bold 9px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(num, 0, 0);
@@ -174,15 +229,15 @@ function drawWheel(angle) {
     }
     
     // دایره وسط
-    ctx.beginPath(); ctx.arc(CX, CY, 35, 0, Math.PI * 2);
-    ctx.fillStyle = '#1a1b23'; ctx.fill();
+    ctx.beginPath(); ctx.arc(CX, CY, 25, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e1f24'; ctx.fill();
     ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.stroke();
     
     // نشانگر بالای چرخ
     ctx.beginPath();
-    ctx.moveTo(CX, CY - R - 5);
-    ctx.lineTo(CX - 8, CY - R - 18);
-    ctx.lineTo(CX + 8, CY - R - 18);
+    ctx.moveTo(CX, CY - R - 2);
+    ctx.lineTo(CX - 6, CY - R - 12);
+    ctx.lineTo(CX + 6, CY - R - 12);
     ctx.closePath();
     ctx.fillStyle = '#fff'; ctx.fill();
 }
@@ -209,26 +264,21 @@ spinBtn.addEventListener('click', () => {
     const targetIndex = Math.floor(Math.random() * POCKETS);
     const targetNum = NUMBERS[targetIndex];
     
-    // --- محاسبه دقیق ریاضی برای رفع باگ ---
-    // زاویه مرکز جیب هدف در حالت بدون چرخش:
+    // محاسبه دقیق ریاضی
     const targetSliceCenter = targetIndex * STEP + (STEP / 2);
-    
-    // ما می‌خواهیم این نقطه دقیقا زیر نشانگر بالا (یعنی -PI/2) قرار بگیرد:
-    // targetSliceCenter + targetAngle = -PI/2 (mod 2PI)
     let exactTargetAngle = -Math.PI / 2 - targetSliceCenter;
     
-    // نرمال سازی زاویه به بین 0 و 2PI
+    // نرمال سازی
     exactTargetAngle = (exactTargetAngle % (Math.PI * 2) + (Math.PI * 2)) % (Math.PI * 2);
     
-    // اضافه کردن 10 دور کامل برای افکت چرخش
+    // 10 دور کامل
     let targetAngle = exactTargetAngle + (Math.PI * 2 * 10);
     
-    // اطمینان از اینکه همیشه در جهت عقربه‌های ساعت می‌چرخد (زاویه بزرگتر از قبلی)
     while (targetAngle <= currentAngle) {
         targetAngle += Math.PI * 2;
     }
 
-    const duration = 4500; // 4.5 ثانیه
+    const duration = 4500; 
     const startTime = performance.now();
     const startAngle = currentAngle;
 
@@ -236,7 +286,6 @@ spinBtn.addEventListener('click', () => {
         const elapsed = time - startTime;
         const progress = Math.min(elapsed / duration, 1);
         
-        // افکت توقف نرم (easeOutCubic)
         const easeOut = 1 - Math.pow(1 - progress, 3);
         currentAngle = startAngle + (targetAngle - startAngle) * easeOut;
         
@@ -245,18 +294,17 @@ spinBtn.addEventListener('click', () => {
         if (progress < 1) {
             requestAnimationFrame(animate);
         } else {
-            finishGame(targetNum, targetIndex);
+            finishGame(targetNum);
         }
     }
     
     requestAnimationFrame(animate);
 });
 
-function finishGame(num, index) {
+function finishGame(num) {
     isSpinning = false;
     spinBtn.disabled = false;
     
-    // آپدیت تاریخچه
     if(historyBar.querySelector('.history-placeholder')) {
         historyBar.innerHTML = '';
     }
@@ -268,7 +316,7 @@ function finishGame(num, index) {
         historyBar.lastChild.remove();
     }
     
-    // منطق برد و باخت (ساده و رندوم برای دمو)
+    // منطق ساده برد
     if (num !== 0 && Math.random() > 0.5) {
         const winAmount = 20;
         balance += winAmount;
@@ -286,7 +334,6 @@ function showWin(text) {
     winAlert.classList.add('show');
     setTimeout(() => winAlert.classList.remove('show'), 2500);
 }
-
 </script>
 </body>
 </html>
