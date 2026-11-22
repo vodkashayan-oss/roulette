@@ -12,30 +12,13 @@
     .app { width: 100%; max-width: 500px; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
 
     /* =========================================
-       ۱. نوار بالایی (تاریخچه و Classic)
+       چرخ رولت (حالا در بالاترین قسمت قرار دارد)
        ========================================= */
-    .top-bar { background: #1e1f26; border-radius: 12px; padding: 8px; display: flex; align-items: center; gap: 8px; direction: ltr; overflow: hidden; }
-    .classic-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: #fff; padding: 0 8px; white-space: nowrap; border-right: 1px solid #333; padding-right: 12px; }
-    .history-area { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1; align-items: center; }
-    .history-area::-webkit-scrollbar { display: none; }
-    .history-text { color: #6b6c76; font-size: 12px; font-weight: 500; white-space: nowrap; }
-    
-    /* باکس اعداد تاریخچه (دقیقا شبیه عکس) */
-    .hist-box { min-width: 38px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: #fff; position: relative; }
-    .hist-box.red { background: #d32f2f; }
-    .hist-box.black { background: #2a2b33; }
-    .hist-box.green { background: #388e3c; }
-    /* خط زرد وسط صفر (شبیه عکس) */
-    .hist-box.green::after { content: ''; position: absolute; width: 2px; height: 100%; background: #fbc02d; }
+    .wheel-container { display: flex; justify-content: center; align-items: center; height: 200px; margin: 10px 0; }
+    canvas { width: 180px; height: 180px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6)); }
 
     /* =========================================
-       چرخ رولت (برای اینکه بازی کار کنه)
-       ========================================= */
-    .wheel-container { display: flex; justify-content: center; align-items: center; height: 180px; margin: 5px 0; }
-    canvas { width: 160px; height: 160px; }
-
-    /* =========================================
-       ۲. میز شرط بندی (دقیقا مثل تصویر)
+       میز شرط بندی (دقیقا مثل تصویر)
        ========================================= */
     .table-wrapper { background: #1e1f26; padding: 8px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; direction: ltr; }
     
@@ -66,7 +49,7 @@
     .bot-cell.black { background: #1e1f26; border: 1px solid #333; color: #fff; }
 
     /* =========================================
-       ۳. بخش کنترل‌ها (تب‌ها، دکمه، موجودی)
+       بخش کنترل‌ها (تب‌ها، دکمه، موجودی)
        ========================================= */
     .controls-wrapper { background: #1e1f26; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; direction: ltr; }
     
@@ -107,20 +90,12 @@
 
 <div class="app">
     
-    <!-- ۱. نوار بالایی -->
-    <div class="top-bar">
-        <div class="classic-btn">✨ Classic ▼</div>
-        <div class="history-area" id="historyBar">
-            <span class="history-text">Recent spins will appear here</span>
-        </div>
-    </div>
-
-    <!-- چرخ بازی -->
+    <!-- چرخ بازی (حالا در بالاترین قسمت است) -->
     <div class="wheel-container">
-        <canvas id="wheelCanvas" width="160" height="160"></canvas>
+        <canvas id="wheelCanvas" width="180" height="180"></canvas>
     </div>
 
-    <!-- ۲. میز شرط بندی -->
+    <!-- میز شرط بندی -->
     <div class="table-wrapper">
         <!-- بخش اصلی (صفر + اعداد + 2:1) -->
         <div class="main-grid">
@@ -149,7 +124,7 @@
         </div>
     </div>
 
-    <!-- ۳. کنترل‌ها -->
+    <!-- کنترل‌ها -->
     <div class="controls-wrapper">
         <div class="tabs">
             <div class="tab active">Manual</div>
@@ -190,7 +165,7 @@ const NUMBERS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,
 const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 let balance = 1000;
 
-// ساخت جدول اعداد دقیقا مثل تصویر
+// ساخت جدول اعداد
 const numbersGrid = document.getElementById('numbersGrid');
 numbersGrid.innerHTML = '';
 // ردیف ۱: 3, 6, 9 ... 36
@@ -212,12 +187,12 @@ for (let i = 1; i <= 12; i++) {
 // --- انیمیشن چرخ ---
 const canvas = document.getElementById('wheelCanvas');
 const ctx = canvas.getContext('2d');
-const CX = 80, CY = 80, R = 70;
+const CX = 90, CY = 90, R = 80;
 const POCKETS = 37;
 const STEP = (Math.PI * 2) / POCKETS;
 
 function drawWheel(angle) {
-    ctx.clearRect(0, 0, 160, 160);
+    ctx.clearRect(0, 0, 180, 180);
     
     for (let i = 0; i < POCKETS; i++) {
         const start = i * STEP + angle;
@@ -230,23 +205,25 @@ function drawWheel(angle) {
         
         // متن
         ctx.save(); ctx.translate(CX, CY); ctx.rotate(start + STEP / 2); ctx.translate(R - 10, 0); ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 8px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(num, 0, 0); ctx.restore();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(num, 0, 0); ctx.restore();
     }
     
     // مرکز
-    ctx.beginPath(); ctx.arc(CX, CY, 20, 0, Math.PI * 2); ctx.fillStyle = '#1e1f26'; ctx.fill(); ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(CX, CY, 22, 0, Math.PI * 2); ctx.fillStyle = '#1e1f26'; ctx.fill(); ctx.strokeStyle = '#333'; ctx.lineWidth = 2; ctx.stroke();
     // نشانگر بالا
-    ctx.beginPath(); ctx.moveTo(CX, CY - R - 2); ctx.lineTo(CX - 5, CY - R - 10); ctx.lineTo(CX + 5, CY - R - 10); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(CX, CY - R - 2); ctx.lineTo(CX - 6, CY - R - 12); ctx.lineTo(CX + 6, CY - R - 12); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill();
 }
 
 let currentAngle = 0;
 drawWheel(currentAngle);
 
 const spinBtn = document.getElementById('spinBtn');
-const historyBar = document.getElementById('historyBar');
 const balanceDisplay = document.getElementById('balanceDisplay');
 const winAlert = document.getElementById('winAlert');
 let isSpinning = false;
+
+// آپدیت اولیه موجودی
+balanceDisplay.textContent = balance;
 
 spinBtn.addEventListener('click', () => {
     if (isSpinning) return;
@@ -287,16 +264,7 @@ function finishGame(num) {
     isSpinning = false;
     spinBtn.disabled = false;
     
-    // آپدیت تاریخچه (دقیقا شبیه عکس)
-    if(historyBar.querySelector('.history-text')) historyBar.innerHTML = '';
-    const type = num === 0 ? 'green' : (RED.has(num) ? 'red' : 'black');
-    const histBox = document.createElement('div');
-    histBox.className = `hist-box ${type}`;
-    histBox.textContent = num;
-    historyBar.prepend(histBox);
-    if (historyBar.children.length > 10) historyBar.lastChild.remove();
-    
-    // منطق برد و باخت (دمو)
+    // منطق برد و باخت
     if (num !== 0 && Math.random() > 0.5) {
         balance += 20;
         balanceDisplay.textContent = balance;
