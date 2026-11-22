@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Roulette</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 40%, #1a0b2e 0%, #0a0416 70%);
+    display: flex; justify-content: center; align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow: hidden; padding: 16px;
+  }
+  .container { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  canvas { filter: drop-shadow(0 20px 60px rgba(168,85,247,.35)); max-width: 92vw; height: auto; }
+  .spin-btn {
+    padding: 15px 46px; font-size: 17px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #8a2be2 0%, #a855f7 50%, #d946ef 100%);
+    border: none; border-radius: 50px; cursor: pointer; letter-spacing: 1px;
+    box-shadow: 0 10px 30px rgba(168,85,247,.5), inset 0 1px 0 rgba(255,255,255,.3);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .spin-btn:active { transform: scale(.96); }
+  .spin-btn:disabled { opacity: .5; pointer-events: none; }
+  #result {
+    font-size: 22px; font-weight: 700; padding: 10px 28px; border-radius: 14px;
+    background: rgba(255,255,255,.05); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.1); color: #fff;
+    opacity: 0; transform: scale(.9); transition: all .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  #result.show { opacity: 1; transform: scale(1); }
+  #result.red { background: rgba(220,38,38,.35); border-color: rgba(239,68,68,.6); }
+  #result.black { background: rgba(30,30,50,.6); }
+  #result.green { background: rgba(16,185,129,.35); border-color: rgba(52,211,153,.6); }
+</style>
+</head>
+<body>
+<div class="container">
+  <canvas id="wheel"></canvas>
+  <button class="spin-btn" id="spinBtn">چرخاندن</button>
+  <div id="result"></div>
+</div>
+
+<script>
+(() => {
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const SIZE = 620;
+canvas.width = SIZE * DPR; canvas.height = SIZE * DPR;
+canvas.style.width = SIZE + 'px'; canvas.style.height = SIZE + 'px';
+ctx.scale(DPR, DPR);
+const CX = SIZE / 2, CY = SIZE / 2;
+
+// ترتیب چرخ اروپایی
+const NUMBERS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const POCKETS = NUMBERS.length;
+const STEP = (Math.PI * 2) / POCKETS;
+
+const R = { rimOuter: 300, rimInner: 278, trackOuter: 270, trackInner: 208, coneOuter: 202, deflector: 262, ballRadius: 9 };
+
+const state = {
+  phase: 'idle', wheelAngle: 0, ballAngle: 0,
+  ballRadius: R.trackOuter - 22, targetNum: null,
+  winningFlash: 0, trail: [], particles: []
+};
+
+// ---- صدا (Web Audio) ----
+let actx = null;
+function initAudio() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); }
+function tick(vol = .08) {
+  if (!actx) return;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.frequency.value = 900 + Math.random() * 500; o.type = 'square';
+  g.gain.setValueAtTime(vol, actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + .03);
+  o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + .03);
+}
+function playWin() {
+  if (!actx) return;
+  [523, 659, 784, 1047, 1319].forEach((f, i) => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = f; o.type = 'sine';
+    const t = actx.currentTime + i * .09;
+    g.gain.setValueAtTime(.14, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + .35);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .35);
+  });
+}
+
+// ---- Easing ----
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+const easeInOutCubic = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+
+// ---- رسم چرخ ----
+function drawWheel() {
+  // هاله دور رینگ
+  const glow = ctx.createRadialGradient(0, 0, R.rimInner - 10, 0, 0, R.rimOuter + 15);
+  glow.addColorStop(0, 'rgba(168,85,247,0)');
+  glow.addColorStop(.7, 'rgba(168,85,247,.45)');
+  glow.addColorStop(1, 'rgba(168,85,247,0)');
+  ctx.beginPath(); ctx.arc(0,0,R.rimOuter+15,0,Math.PI*2); ctx.fillStyle = glow; ctx.fill();
+
+  // رینگ فلزی
+  const rim = ctx.createRadialGradient(-60,-60,10,0,0,R.rimOuter);
+  rim.addColorStop(0, '#4a3a6a'); rim.addColorStop(.35, '#8a6aba');
+  rim.addColorStop(.65, '#5a4a7a'); rim.addColorStop(1, '#3a2a5a');
+  ctx.beginPath();
+  ctx.arc(0,0,R.rimOuter,0,Math.PI*2);
+  ctx.arc(0,0,R.rimInner,0,Math.PI*2,true);
+  ctx.fillStyle = rim; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(0,0,R.rimOuter-1,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(200,180,255,.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // جیبها
+  for (let i = 0; i < POCKETS; i++) {
+    const num = NUMBERS[i];
+    const a0 = i*STEP - Math.PI/2 - STEP/2, a1 = a0 + STEP;
+    ctx.beginPath();
+    ctx.arc(0,0,R.trackOuter,a0,a1);
+    ctx.arc(0,0,R.trackInner,a1,a0,true);
+    ctx.closePath();
+    ctx.fillStyle = num === 0 ? '#10b981' : (RED.has(num) ? '#dc2626' : '#1a1a2e');
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1; ctx.stroke();
+
+    // پالس جیب برنده
+    if (state.winningFlash > 0 && num === state.targetNum) {
+      const pulse = .5 + .5 * Math.sin(performance.now()/180);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0,0,R.trackOuter,a0,a1);
+      ctx.arc(0,0,R.trackInner,a1,a0,true);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(255,215,0,${.25 + pulse*.35 * state.winningFlash})`;
+      ctx.fill(); ctx.restore();
+    }
+
+    // عدد
+    ctx.save();
+    ctx.rotate(a0 + STEP/2);
+    ctx.translate((R.trackInner+R.trackOuter)/2, 0);
+    ctx.rotate(Math.PI/2);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px -apple-system, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowBlur = 4; ctx.shadowColor = 'rgba(0,0,0,.9)';
+    ctx.fillText(num, 0, 0);
+    ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+
+  // دیفلکتورها
+  for (let i = 0; i < 8; i++) {
+    ctx.save();
+    ctx.rotate(i * Math.PI * 2 / 8);
+    ctx.translate(R.deflector, 0);
+    ctx.beginPath();
+    ctx.moveTo(-8,0); ctx.lineTo(0,-5); ctx.lineTo(8,0); ctx.lineTo(0,5);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(-8,0,8,0);
+    g.addColorStop(0,'#8a6aba'); g.addColorStop(.5,'#e0d0ff'); g.addColorStop(1,'#8a6aba');
+    ctx.fillStyle = g;
+    ctx.shadowBlur = 6; ctx.shadowColor = '#a855f7';
+    ctx.fill(); ctx.restore();
+  }
+  ctx.shadowBlur = 0;
+
+  // مخروط مرکزی
+  const cone = ctx.createRadialGradient(-30,-40,10,0,0,R.coneOuter);
+  cone.addColorStop(0,'#3a2a5a'); cone.addColorStop(.5,'#1a0b2e'); cone.addColorStop(1,'#0a0416');
+  ctx.beginPath(); ctx.arc(0,0,R.coneOuter,0,Math.PI*2);
+  ctx.fillStyle = cone; ctx.fill();
+  ctx.beginPath(); ctx.arc(0,0,R.coneOuter-2,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(168,85,247,.45)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // ستاره مرکزی
+  drawStar(0, 0, 5, 22, 10);
+}
+
+function drawStar(cx, cy, spikes, outer, inner) {
+  let rot = -Math.PI/2; const step = Math.PI/spikes;
+  ctx.beginPath(); ctx.moveTo(cx, cy - outer);
+  for (let i = 0; i < spikes; i++) {
+    ctx.lineTo(cx + Math.cos(rot)*outer, cy + Math.sin(rot)*outer); rot += step;
+    ctx.lineTo(cx + Math.cos(rot)*inner, cy + Math.sin(rot)*inner); rot += step;
+  }
+  ctx.closePath();
+  const g = ctx.createRadialGradient(cx,cy,0,cx,cy,outer);
+  g.addColorStop(0,'#fff'); g.addColorStop(.5,'#a855f7'); g.addColorStop(1,'rgba(168,85,247,0)');
+  ctx.fillStyle = g;
+  ctx.shadowBlur = 20; ctx.shadowColor = '#a855f7';
+  ctx.fill(); ctx.shadowBlur = 0;
+}
+
+function drawBall() {
+  const x = Math.cos(state.ballAngle) * state.ballRadius;
+  const y = Math.sin(state.ballAngle) * state.ballRadius;
+
+  // trail
+  for (const p of state.trail) {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 6*p.life, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(224,176,255,${p.life*.45})`; ctx.fill();
+  }
+  // سایه
+  ctx.beginPath(); ctx.arc(x+3, y+4, R.ballRadius, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
+  // توپ
+  const bg = ctx.createRadialGradient(x-3, y-3, 1, x, y, R.ballRadius);
+  bg.addColorStop(0,'#fff'); bg.addColorStop(.5,'#f0e6ff'); bg.addColorStop(1,'#a080c0');
+  ctx.beginPath(); ctx.arc(x,y,R.ballRadius,0,Math.PI*2);
+  ctx.fillStyle = bg;
+  ctx.shadowBlur = 18; ctx.shadowColor = '#e0b0ff';
+  ctx.fill(); ctx.shadowBlur = 0;
+  // هایلایت
+  ctx.beginPath(); ctx.arc(x-3, y-3, 2.5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fill();
+}
+
+function draw() {
+  ctx.clearRect(0,0,SIZE,SIZE);
+  const bg = ctx.createRadialGradient(CX,CY,50,CX,CY,SIZE/2);
+  bg.addColorStop(0,'rgba(168,85,247,.18)');
+  bg.addColorStop(.5,'rgba(80,20,140,.08)');
+  bg.addColorStop(1,'rgba(10,4,22,0)');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,SIZE,SIZE);
+
+  ctx.save(); ctx.translate(CX, CY);
+  ctx.save(); ctx.rotate(state.wheelAngle); drawWheel(); ctx.restore();
+  drawBall();
+  for (const p of state.particles) {
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${p.color},${p.life})`; ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---- چرخاندن ----
+function spin() {
+  if (state.phase === 'spinning') return;
+  initAudio();
+  const btn = document.getElementById('spinBtn');
+  btn.disabled = true;
+
+  state.targetNum = NUMBERS[Math.floor(Math.random() * POCKETS)];
+  state.phase = 'spinning';
+  state.winningFlash = 0; state.particles = []; state.trail = [];
+
+  const targetLocal = NUMBERS.indexOf(state.targetNum) * STEP + STEP/2;
+  const wheelStart = state.wheelAngle;
+  // چرخ پادساعتگرد
+  const wheelEnd = wheelStart - Math.PI * 2 * (2.5 + Math.random() * .5);
+  const targetWorld = wheelEnd + targetLocal;
+
+  // توپ ساعتگرد
+  const ballStart = state.ballAngle;
+  const K = Math.floor((ballStart - targetWorld) / (Math.PI*2)) + 12;
+  const ballEnd = targetWorld + Math.PI * 2 * K;
+
+  const rStart = R.trackOuter - 22;
+  const rEnd = (R.trackInner + R.trackOuter) / 2 + 4;
+  const duration = 7000;
+  const t0 = performance.now();
+  let lastTick = ballStart;
+
+  function frame(now) {
+    const t = Math.min(1, (now - t0) / duration);
+
+    state.wheelAngle = wheelStart + (wheelEnd - wheelStart) * easeOutCubic(t);
+    state.ballAngle = ballStart + (ballEnd - ballStart) * easeOutCubic(t);
+
+    // شعاع توپ: مرحله اول بیرون، بعد مارپیچ به داخل
+    const rT = Math.max(0, Math.min(1, (t - .55) / .4));
+    let bounce = 0;
+    if (rT > .85) {
+      const bT = (rT - .85) / .15;
+      bounce = Math.sin(bT * Math.PI * 4) * (1 - bT) * 14;
+    }
+    state.ballRadius = rStart + (rEnd - rStart) * easeInOutCubic(rT) + bounce;
+
+    // لرزش ریز در پایان
+    if (t > .9) {
+      const wT = (t - .9) / .1;
+      state.ballAngle += Math.sin(wT * Math.PI * 6) * .008 * (1 - wT);
+    }
+
+    // trail
+    state.trail.push({
+      x: Math.cos(state.ballAngle) * state.ballRadius,
+      y: Math.sin(state.ballAngle) * state.ballRadius,
+      life: 1
+    });
+    if (state.trail.length > 15) state.trail.shift();
+    state.trail.forEach(p => p.life -= .06);
+    state.trail = state.trail.filter(p => p.life > 0);
+
+    // تیک صدا
+    if (Math.abs(state.ballAngle - lastTick) > STEP / 2 && t < .85) {
+      tick(.08 * (1 - t));
+      if (navigator.vibrate) navigator.vibrate(2);
+      lastTick = state.ballAngle;
+    }
+
+    draw();
+
+    if (t < 1) requestAnimationFrame(frame);
+    else finish();
+  }
+
+  function finish() {
+    state.phase = 'result';
+    state.winningFlash = 1;
+    playWin();
+    if (navigator.vibrate) navigator.vibrate([30, 50, 30, 50, 100]);
+    spawnParticles();
+    showResult(state.targetNum);
+
+    const flashStart = performance.now();
+    (function flash(now) {
+      const e = (now - flashStart) / 3000;
+      if (e < 1) { state.winningFlash = 1 - e; draw(); requestAnimationFrame(flash); }
+      else { state.winningFlash = 0; draw(); }
+    })(flashStart);
+
+    animateParticles();
+    btn.disabled = false;
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function spawnParticles() {
+  for (let i = 0; i < 70; i++) {
+    const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 5;
+    state.particles.push({
+      x: 0, y: 0, vx: Math.cos(a)*s, vy: Math.sin(a)*s,
+      size: 2 + Math.random()*4, life: 1,
+      color: ['255,215,0','168,85,247','255,255,255','217,70,239'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+
+function animateParticles() {
+  (function step() {
+    state.particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= .96; p.vy *= .96; p.vy += .06; p.life -= .015;
+    });
+    state.particles = state.particles.filter(p => p.life > 0);
+    draw();
+    if (state.particles.length) requestAnimationFrame(step);
+  })();
+}
+
+function showResult(num) {
+  const el = document.getElementById('result');
+  const color = num === 0 ? 'green' : (RED.has(num) ? 'red' : 'black');
+  el.textContent = `${num}  •  ${color === 'red' ? 'قرمز' : color === 'black' ? 'مشکی' : 'سبز'}`;
+  el.className = '';
+  void el.offsetWidth;
+  el.className = 'show ' + color;
+}
+
+document.getElementById('spinBtn').addEventListener('click', spin);
+draw();
+})();
+</script>
+</body>
+</html>
